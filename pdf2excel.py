@@ -109,6 +109,8 @@ def clean_text(paragrafo):
     if '  ' in paragrafo:
         pat = r'\s+'
         paragrafo = re.sub(pat,' ',paragrafo)
+    if '- ' in paragrafo:
+        paragrafo = re.sub('- ','',paragrafo)
     return(paragrafo)
 #print(cerca('Cross-modal Damping Model: an experimental extraction approach and aircraft dynamic loads application'))
 wb = load_workbook('FINAL PAPER IFASD 2017/Repository Upload Information_IFASD_2017.xlsx')
@@ -133,7 +135,7 @@ for row in np.arange(9,171,1):
         #extract_text(
 
         #with pdfplumber.open(pdf_path) as pdf:
-        if not flag_abstract:
+        if not flag_abstract and IFASD_name!='IFASD-2017-180.pdf':
             if not is_already_open:
 
                 #first_page = pdf.pages[0]
@@ -162,9 +164,14 @@ for row in np.arange(9,171,1):
                     match = re.search(pattern, paragrafo,re.DOTALL)
                     paragrafo = match.group(1)         
                 except:
-                    pattern = r'Abstract:\s*(.*?)[\s*\n]?\s*Introduction'
-                    match = re.search(pattern, paragrafo,re.DOTALL)
-                    paragrafo = match.group(1)         
+                    try:
+                        pattern = r'Abstract:\s*(.*?)[\s*\n]?\s*Introduction'
+                        match = re.search(pattern, paragrafo,re.DOTALL)
+                        paragrafo = match.group(1) 
+                    except:       
+                        pattern = r'Abstract:\s*(.*?)[\s*\n]?\s*Notice to Readers'
+                        match = re.search(pattern, paragrafo,re.DOTALL)
+                        paragrafo = match.group(1) 
             
             #print(paragrafo + '\n\n')
             ws['G'+str(row)].value = paragrafo
@@ -195,7 +202,7 @@ for row in np.arange(9,171,1):
                         match = re.search(pattern, paragrafo,re.DOTALL)   
                         paragrafo = match.group(1)
                     except:
-                        pattern =  r'Kewywords:\s*(.*?)[\s*\n]?\s*1 INTRODUCTION'
+                        pattern =  r'Keywords:\s*(.*?)\s*1\s+INTRODUCTION'
                         match = re.search(pattern, paragrafo,re.DOTALL)   
                         paragrafo = match.group(1)
             
