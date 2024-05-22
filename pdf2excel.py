@@ -99,7 +99,7 @@ def cerca(book_title):
     finally:
         # Ensure the driver quits properly
         driver.quit()
-def clean_text(paragrafo):
+def clean_text(paragrafo,IFASD_name):
     if '\n' in paragrafo:
         paragrafo = re.sub(r'(?<=[a-zA-Z])\n|(?=\n[a-zA-Z])',' ',paragrafo)
         paragrafo = re.sub(r'\n+','',paragrafo)
@@ -111,12 +111,16 @@ def clean_text(paragrafo):
         paragrafo = re.sub(pat,' ',paragrafo)
     if '- ' in paragrafo:
         paragrafo = re.sub('- ','',paragrafo)
+    IFASD_name=re.sub('.pdf','',IFASD_name)
+    pat = r'1\s+' + re.escape(IFASD_name)
+    if re.search(pat, paragrafo):
+        paragrafo = re.sub(pat,'',paragrafo)
     return(paragrafo)
 #print(cerca('Cross-modal Damping Model: an experimental extraction approach and aircraft dynamic loads application'))
 wb = load_workbook('FINAL PAPER IFASD 2017/Repository Upload Information_IFASD_2017.xlsx')
 
 ws = wb.active
-for row in np.arange(9,171,1):
+for row in np.arange(152,171,1):
     flag_abstract = flag_keywords = flag_online = True
     if ws['G'+str(row)].value == None:
         flag_abstract = False
@@ -124,6 +128,7 @@ for row in np.arange(9,171,1):
         flag_keywords = False
     if ws['J'+str(row)].value == None:
         flag_online = False
+    
     
     titles = []
     
@@ -154,7 +159,7 @@ for row in np.arange(9,171,1):
             paragrafo = texts
             pattern = r'Abstract:\s*(.*?)[\s*\n]?\s*INTRODUCTION'
             #pattern = r'Abstract:\s*(.*?)\s*1\s*INTRODUCTION'
-            paragrafo = clean_text(paragrafo)
+            paragrafo = clean_text(paragrafo,IFASD_name)
             try:
                 match = re.search(pattern, paragrafo,re.DOTALL)
                 paragrafo = match.group(1)  
@@ -169,12 +174,15 @@ for row in np.arange(9,171,1):
                         match = re.search(pattern, paragrafo,re.DOTALL)
                         paragrafo = match.group(1) 
                     except:       
-                        pattern = r'Abstract:\s*(.*?)[\s*\n]?\s*Notice to Readers'
-                        match = re.search(pattern, paragrafo,re.DOTALL)
-                        paragrafo = match.group(1) 
-            pat = r'1\s+'+IFASD_name
-            if pat in paragrafo:
-                paragrafo = re.sub(pat,'',paragrafo)
+                        try:
+                            pattern = r'Abstract:\s*(.*?)[\s*\n]?\s*Notice to Readers'
+                            match = re.search(pattern, paragrafo,re.DOTALL)
+                            paragrafo = match.group(1) 
+                        except:
+                            pattern = r'Abstract:?\s*(.*?)\s*\n*\s*INTRODUCTION'
+                            match = re.search(pattern, paragrafo,re.DOTALL)
+                            paragrafo = match.group(1) 
+            
             
             #print(paragrafo + '\n\n')
             ws['G'+str(row)].value = paragrafo
@@ -190,7 +198,7 @@ for row in np.arange(9,171,1):
             paragrafo = texts
             pattern =  r'Keywords:\s*(.*?)\s*[\n\s]*Abstract\s*:'
             #paragrafo = first_page.extract_text_simple(x_tolerance=5, y_tolerance=5)
-            paragrafo = clean_text(paragrafo)
+            paragrafo = clean_text(paragrafo,IFASD_name)
             try:
                 match = re.search(pattern, paragrafo,re.DOTALL)   
                 paragrafo = match.group(1)
