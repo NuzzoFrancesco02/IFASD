@@ -120,7 +120,8 @@ def clean_text(paragrafo,IFASD_name):
 wb = load_workbook('FINAL PAPER IFASD 2017/Repository Upload Information_IFASD_2017.xlsx')
 
 ws = wb.active
-for row in np.arange(152,171,1):
+titles = ''
+for row in np.arange(9,172,1):
     flag_abstract = flag_keywords = flag_online = True
     if ws['G'+str(row)].value == None:
         flag_abstract = False
@@ -130,19 +131,19 @@ for row in np.arange(152,171,1):
         flag_online = False
     
     
-    titles = []
+
     
     if not flag_online or not flag_keywords or not flag_abstract:
         is_already_open = False
         IFASD_name = ws['F'+str(row)].value
-        #pdf_path = os.path.join('FINAL PAPER IFASD 2017',IFASD_name)
-        texts = extract_text('FINAL PAPER IFASD 2017/'+IFASD_name,page_numbers=[0,1])
         #extract_text(
 
         #with pdfplumber.open(pdf_path) as pdf:
         if not flag_abstract:
             if not is_already_open:
-
+                
+                #pdf_path = os.path.join('FINAL PAPER IFASD 2017',IFASD_name)
+                texts = extract_text('FINAL PAPER IFASD 2017/'+IFASD_name,page_numbers=[0,1])
                 #first_page = pdf.pages[0]
                 
                 #second_page = pdf.pages[1]
@@ -157,9 +158,10 @@ for row in np.arange(152,171,1):
             #paragrafo2 = second_page.extract_text_simple(x_tolerance=1, y_tolerance=5)
             #paragrafo = paragrafo1 + ' ' + paragrafo2
             paragrafo = texts
-            pattern = r'Abstract:\s*(.*?)[\s*\n]?\s*INTRODUCTION'
-            #pattern = r'Abstract:\s*(.*?)\s*1\s*INTRODUCTION'
             paragrafo = clean_text(paragrafo,IFASD_name)
+            pattern = r'Abstract:\s*(.*?)[\s*\n]?[\d]\s*INTRODUCTION'
+            #pattern = r'Abstract:\s*(.*?)\s*1\s*INTRODUCTION'
+            
             try:
                 match = re.search(pattern, paragrafo,re.DOTALL)
                 paragrafo = match.group(1)  
@@ -179,9 +181,26 @@ for row in np.arange(152,171,1):
                             match = re.search(pattern, paragrafo,re.DOTALL)
                             paragrafo = match.group(1) 
                         except:
-                            pattern = r'Abstract:?\s*(.*?)\s*\n*\s*INTRODUCTION'
-                            match = re.search(pattern, paragrafo,re.DOTALL)
-                            paragrafo = match.group(1) 
+                            try:
+                                pattern = r'Abstract:?\s*(.*?)\s*\n*\s*INTRODUCTION'
+                                match = re.search(pattern, paragrafo,re.DOTALL)
+                                paragrafo = match.group(1) 
+                            except:
+                                try:
+                                    pattern = r'Abstract:?\s*(.*?)\s*\n*\s*INTRODUCYION'
+                                    match = re.search(pattern, paragrafo,re.DOTALL)
+                                    paragrafo = match.group(1) 
+                                except:
+                                    try:
+                                        pattern = r'Abstract:?\s*(.*?)\s*\n*\s*NOMENCLATURE'
+                                        match = re.search(pattern, paragrafo,re.DOTALL)
+                                        paragrafo = match.group(1) 
+                                    except:
+                                        pattern = r'Abstract:?\s*(.*?)\s*\n*\s*NOTATION'
+                                        match = re.search(pattern, paragrafo,re.DOTALL)
+                                        paragrafo = match.group(1) 
+                                
+
             
             
             #print(paragrafo + '\n\n')
@@ -189,6 +208,9 @@ for row in np.arange(152,171,1):
         
         if not flag_keywords and IFASD_name!='IFASD-2017-180.pdf' and IFASD_name!='IFASD-2017-181.pdf':
             if not is_already_open:
+                IFASD_name = ws['F'+str(row)].value
+                #pdf_path = os.path.join('FINAL PAPER IFASD 2017',IFASD_name)
+                texts = extract_text('FINAL PAPER IFASD 2017/'+IFASD_name,page_numbers=[0,1])
                 #first_page = pdf.pages[0]                   
                 #second_page = pdf.pages[1]
                 is_already_open = True
@@ -219,7 +241,7 @@ for row in np.arange(152,171,1):
             
             
             #print(paragrafo + '\n\n')
-            ws['G'+str(row)].value = paragrafo
+            ws['I'+str(row)].value = paragrafo
         if not flag_online or flag_online:
             
             title = ws['B'+str(row)].value
@@ -239,7 +261,7 @@ for row in np.arange(152,171,1):
             #    link = 'checked'
             #print(link)
             print('\n')
-            titles = titles.append(title+'\n')
+            titles = titles + title +'\n'
             #ws['J'+str(row)].value = link
 with open('titles.txt', "w") as file_titles:
     file_titles.write(titles)             
