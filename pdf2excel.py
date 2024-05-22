@@ -135,7 +135,7 @@ for row in np.arange(9,171,1):
         #extract_text(
 
         #with pdfplumber.open(pdf_path) as pdf:
-        if not flag_abstract and IFASD_name!='IFASD-2017-180.pdf':
+        if not flag_abstract:
             if not is_already_open:
 
                 #first_page = pdf.pages[0]
@@ -176,7 +176,7 @@ for row in np.arange(9,171,1):
             #print(paragrafo + '\n\n')
             ws['G'+str(row)].value = paragrafo
         
-        if not flag_keywords:
+        if not flag_keywords and IFASD_name!='IFASD-2017-180.pdf':
             if not is_already_open:
                 #first_page = pdf.pages[0]                   
                 #second_page = pdf.pages[1]
