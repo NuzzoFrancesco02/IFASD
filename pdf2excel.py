@@ -172,11 +172,14 @@ for row in np.arange(9,171,1):
                         pattern = r'Abstract:\s*(.*?)[\s*\n]?\s*Notice to Readers'
                         match = re.search(pattern, paragrafo,re.DOTALL)
                         paragrafo = match.group(1) 
+            pat = r'1\s+'+IFASD_name
+            if pat in paragrafo:
+                paragrafo = re.sub(pat,'',paragrafo)
             
             #print(paragrafo + '\n\n')
             ws['G'+str(row)].value = paragrafo
         
-        if not flag_keywords and IFASD_name!='IFASD-2017-180.pdf':
+        if not flag_keywords and IFASD_name!='IFASD-2017-180.pdf' and IFASD_name!='IFASD-2017-181.pdf':
             if not is_already_open:
                 #first_page = pdf.pages[0]                   
                 #second_page = pdf.pages[1]
