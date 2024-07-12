@@ -1,0 +1,33 @@
+# Ambiente virtuale
+myenv/
+
+# File di configurazione dell'editor
+.vscode/
+.idea/
+
+# File di log
+*.log
+
+# File temporanei
+*.tmp
+*.swp
+
+# Compilazioni
+__pycache__/
+*.py[cod]
+
+# File di output
+*.out
+*.class
+
+# Configurazioni di sistema
+.DS_Store
+Thumbs.db
+
+# Pipenv
+Pipfile.lock
+
+# Jupyter Notebook
+.ipynb_checkpoints/
+
+.pdf
