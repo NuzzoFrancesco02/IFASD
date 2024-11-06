@@ -1,295 +1,183 @@
 import numpy as np
 import re
 from openpyxl import Workbook, load_workbook
-import os 
-import random
-import time
+import os
 from pdfminer.high_level import extract_text
 
+# Funzione per pulire il testo, rimuovendo righe vuote, spazi e caratteri superflui
+def clean_text(paragrafo, file_name):
+    # Sostituisce il carattere di nuova riga tra parole con uno spazio
+    paragrafo = re.sub(r'(?<=[a-zA-Z])\n|(?=\n[a-zA-Z])', ' ', paragrafo)
+    paragrafo = re.sub(r'\n+', '', paragrafo)
+    paragrafo = re.sub(r'\s+', ' ', paragrafo)  # Rimuove spazi multipli
+    paragrafo = paragrafo.replace('- ', '')     # Rimuove trattini seguiti da spazio
+    # Rimuove l'identificativo del file se presente
+    file_name = re.sub('.pdf', '', file_name)
+    paragrafo = re.sub(rf'1\s+{re.escape(file_name)}', '', paragrafo)
+    return paragrafo
 
-
-def clean_text(paragrafo,IFASD_name):
-    if '\n' in paragrafo:
-        paragrafo = re.sub(r'(?<=[a-zA-Z])\n|(?=\n[a-zA-Z])',' ',paragrafo)
-        paragrafo = re.sub(r'\n+','',paragrafo)
-    if '  ' in paragrafo:
-        pat = r'\s+'
-        paragrafo = re.sub(pat,' ',paragrafo)
-    if '  ' in paragrafo:
-        pat = r'\s+'
-        paragrafo = re.sub(pat,' ',paragrafo)
-    if '- ' in paragrafo:
-        paragrafo = re.sub('- ','',paragrafo)
-    IFASD_name=re.sub('.pdf','',IFASD_name)
-    pat = r'1\s+' + re.escape(IFASD_name)
-    if re.search(pat, paragrafo):
-        paragrafo = re.sub(pat,'',paragrafo)
-    return(paragrafo)
-wb = load_workbook('/Users/francesconuzzo/Downloads/USB_Proceedings/info/papers/Cartel1.xlsx')
-
+# Caricamento del file Excel
+#                                  DA MODIFICARE
+#                                         |
+#                                         V
+excel_path = '/Users/francesconuzzo/Downloads/PROCEEDINGS/Repository Upload Information_IFASD_2019 copia.xlsx'  # Modifica con il percorso del file
+wb = load_workbook(excel_path)
 ws = wb.active
+
+# Definizione dei limiti delle righe da processare (righe di excel)
+raw_begin = 9
+
+#     DA MODIFICARE
+#         |
+#         V
+raw_end = 139
 titles = ''
-raw_begin = 147
-raw_end = 210
 
-if isinstance(ws['E'+str(raw_begin - 1)].value, int):
-    indice = ws['E'+str(raw_begin - 1)].value + 1
-else:
-    indice = raw_begin-8
-for row in np.arange(raw_begin,raw_end,1):
-    if indice == 209:
+# Identificazione dell'indice di partenza
+indice = ws[f'E{raw_begin - 1}'].value + 1 if isinstance(ws[f'E{raw_begin - 1}'].value, int) else raw_begin - 8
+
+# Iterazione sulle righe per estrarre e processare le informazioni
+for row in range(raw_begin, raw_end):
+    if indice >= raw_end-1:
         break
-    flag_authors = flag_conf_numb = flag_abstract = flag_file_name = flag_keywords = flag_category = flag_online = True
-    flag_title = False
-    #if ws['B'+str(row)].value == None:
-        #flag_title = False
-    if ws['C'+str(row)].value == None:
-        flag_authors = False
-    if ws['E'+str(row)].value == None:
-        flag_conf_numb = False
-    if ws['F'+str(row)].value == None:
-        flag_file_name = False
-    if ws['G'+str(row)].value == None:
-        flag_abstract = False
-    if ws['H'+str(row)].value == None:
-        flag_category = False
-    if ws['I'+str(row)].value == None:
-        flag_keywords = False
-    if ws['J'+str(row)].value == None:
-        flag_online = False
-    
-    
 
-    
-    if not flag_title or not flag_authors or not flag_conf_numb or not flag_file_name or not flag_category or not flag_online or not flag_keywords or not flag_abstract:
-        is_already_open = False
+    # Flag per verificare la presenza delle informazioni necessarie
+    flag_authors = flag_conf_numb = flag_abstract = flag_file_name = flag_keywords = flag_category = flag_online = True
+    flag_title = ws[f'B{row}'].value is None
+    if ws[f'C{row}'].value is None:
+        flag_authors = False
+    if ws[f'E{row}'].value is None:
+        flag_conf_numb = False
+    if ws[f'F{row}'].value is None:
+        flag_file_name = False
+    if ws[f'G{row}'].value is None:
+        flag_abstract = False
+    if ws[f'H{row}'].value is None:
+        flag_category = False
+    if ws[f'I{row}'].value is None:
+        flag_keywords = False
+    if ws[f'J{row}'].value is None:
+        flag_online = False
+
+    # Se qualche flag è False, cerca il file corrispondente
+    if not (flag_title and flag_authors and flag_conf_numb and flag_file_name and flag_category and flag_online and flag_keywords and flag_abstract):
         is_file_flag = False
         while not is_file_flag and indice <= 208:
-            if indice < 10:
-                IFASD_name = 'IFASD-2015-00'+str(indice)+'.pdf'
-                if os.path.isfile('/Users/francesconuzzo/Downloads/PROCEEDINGS/'+IFASD_name):
-                    
-                    is_file_flag = True
-                else:
-                    indice = indice + 1
-            elif indice < 100:
-                IFASD_name = 'IFASD-2015-0' + str(indice)+'.pdf'
-                if os.path.isfile('/Users/francesconuzzo/Downloads/PROCEEDINGS/'+IFASD_name):
-                
-                    is_file_flag = True
-                else:
-                    indice = indice + 1
+            #!!!!!!       DA MODIFICARE
+            #                  |
+            #                  V
+            IFASD_name = f"IFASD-2019-{indice:03}.pdf"  # Genera il nome file con indice a 3 cifre
+            
+            #!!!!!!!!!!!!!!!!!!!!!!!!!         DA MODIFICARE
+            #                                         |
+            #                                         V
+            file_path = os.path.join('/Users/francesconuzzo/Downloads/PROCEEDINGS', IFASD_name)  # Modifica con il percorso cartella
+            if os.path.isfile(file_path):
+                is_file_flag = True
             else:
-                IFASD_name = 'IFASD-2015-' + str(indice)+'.pdf'
-                if os.path.isfile('/Users/francesconuzzo/Downloads/PROCEEDINGS/'+IFASD_name):
-                    
-                    is_file_flag = True
-                else:
-                    indice = indice + 1
+                indice += 1
+
         if not flag_conf_numb:
-                ws['E'+str(row)].value = indice
-        if is_file_flag == True:
-            indice = indice + 1
-        #IFASD_name = ws['F'+str(row)].value
-        if not 'IFASD-2019-063.pdf' == IFASD_name and not 'IFASD-2019-069.pdf' == IFASD_name and not 'IFASD-2019-100.pdf' == IFASD_name and not 'IFASD-2019-129.pdf' == IFASD_name:
-        #if not 'IFASD-2015-054.pdf' == IFASD_name and not 'IFASD-2015-181.pdf' == IFASD_name and not 'IFASD-2015-206.pdf' == IFASD_name and not 'IFASD-2015-207.pdf' == IFASD_name:
-            if not flag_title:
-                if not is_already_open:
-                    texts = extract_text('/Users/francesconuzzo/Downloads/USB_Proceedings/info/papers/'+IFASD_name,page_numbers=[0,1])
-                    is_already_open = True
-                    paragrafo = texts
-                    
-                    #paragrafo = clean_text(paragrafo,IFASD_name)
-                #uppercase check
-                up_title = paragrafo[:10]
-                up_title_check = clean_text(up_title,IFASD_name)
-                up_title_check = up_title_check.replace(" ","")
-                
-                if up_title_check.isupper():
-                    #pattern = r"(^[^a-z]*)([a-z].*)"
-                    pattern =r'\s*(.*?)(?:\r?\n\r?\n)'
-                    match = re.search(pattern, paragrafo,re.DOTALL)
-                    paper_title = match.group(1)
-                    paper_title = paper_title[:-2]
-                    beg, title_pos = match.regs[1]
-                else:
-                    #pattern =r'(.*?)(?:\r?\n\r?\n)'
-                    pattern =r'\s*(.*?)(?:\r?\n\r?\n)'
-                    match = re.findall(pattern,paragrafo,re.DOTALL)
-                    paper_title = match[0]
-                    title_pos = len(paper_title)
+            ws[f'E{row}'].value = indice
+        if is_file_flag:
+            indice += 1
 
-                ws['B'+str(row)].value = clean_text(paper_title,IFASD_name)
-            if not flag_authors:
-                if not is_already_open:
-                    texts = extract_text('/Users/francesconuzzo/Downloads/USB_Proceedings/info/papers/'+IFASD_name,page_numbers=[0,1])
-                    is_already_open = True
-                    paragrafo = texts
-                    #paragrafo = clean_text(paragrafo,IFASD_name)
-                #pattern = re.escape(paper_title) + r'\n*([^\n]+)'
-                pattern = re.escape(paper_title) + r'\n*(.+?)(?=\n{2,})'
-                match = re.findall(pattern, paragrafo, re.DOTALL)
+        # Apertura e lettura del testo dal PDF solo una volta per riga
+        if not is_file_flag:
+            continue
 
+        text = extract_text(file_path, page_numbers=[0, 1])
+        paragrafo = clean_text(text, IFASD_name)
+
+        # Estrazione del titolo con tutti i pattern specificati
+        if flag_title or not flag_authors:
+            title_patterns = [
+                r'USA\s*[\r\n]*(.*?)\s*(?:\n\s*\n|$)',
+                r'\s*(.*?)(?:\r?\n\r?\n)',                 # Pattern generico per il titolo
+                r'\s*Title\s*:\s*(.*?)(?:\r?\n\r?\n)',     # Pattern per "Title :"
+                r'\s*Paper Title\s*:\s*(.*?)(?:\r?\n\r?\n)',  # Pattern per "Paper Title :"
+                r'\s*(.*?)\s*Authors',                     # Pattern che termina prima di "Authors"
+                r'\s*(.*?)\s*Introduction',                # Pattern che termina prima di "Introduction"
+            ]
+            for pattern in title_patterns:
+                match = re.search(pattern, text, re.DOTALL)
                 if match:
-                    paper_authors = match[0]
-                #paper_authors = re.sub(pattern,'', paper_authors)
-                #authors_pos = title_pos + len(paper_authors) 
-                paper_authors = re.sub(r'\d+', '', paper_authors)
-                ws['C'+str(row)].value = clean_text(paper_authors,IFASD_name)
+                    paper_title_raw = match.group(1).strip()
+                    paper_title = clean_text(paper_title_raw, IFASD_name)
+                    if flag_title: ws[f'B{row}'].value = paper_title
+                    print(paper_title + '\n')
+                    break
 
-            
-            if not flag_file_name:
-                ws['F'+str(row)].value = IFASD_name
-            if not flag_abstract:
-                if not is_already_open:
-                    texts = extract_text('/Users/francesconuzzo/Downloads/USB_Proceedings/info/papers/'+IFASD_name,page_numbers=[0,1])
-                    is_already_open = True
-                paragrafo = texts
-                paragrafo = clean_text(paragrafo,IFASD_name)
-                pattern = r'Abstract:\s*(.*?)[\s*\n]?[\d]\s*INTRODUCTION'
-                try:
-                    match = re.search(pattern, paragrafo,re.DOTALL)
-                    paragrafo = match.group(1)  
-                except:
-                    try: 
-                        pattern = r'Abstract:\s*(.*?)[\s*\n]?\s*List of Symbols'
-                        match = re.search(pattern, paragrafo,re.DOTALL)
-                        paragrafo = match.group(1)         
-                    except:
-                        try:
-                            pattern = r'Abstract:\s*(.*?)[\s*\n]?\s*Introduction'
-                            match = re.search(pattern, paragrafo,re.DOTALL)
-                            paragrafo = match.group(1) 
-                        except:       
-                            try:
-                                pattern = r'Abstract:\s*(.*?)[\s*\n]?\s*Notice to Readers'
-                                match = re.search(pattern, paragrafo,re.DOTALL)
-                                paragrafo = match.group(1) 
-                            except:
-                                try:
-                                    pattern = r'Abstract:?\s*(.*?)\s*\n*\s*INTRODUCTION'
-                                    match = re.search(pattern, paragrafo,re.DOTALL)
-                                    paragrafo = match.group(1) 
-                                except:
-                                    try:
-                                        pattern = r'Abstract:?\s*(.*?)\s*\n*\s*INTRODUCYION'
-                                        match = re.search(pattern, paragrafo,re.DOTALL)
-                                        paragrafo = match.group(1) 
-                                    except:
-                                        try:
-                                            pattern = r'Abstract:?\s*(.*?)\s*\n*\s*NOMENCLATURE'
-                                            match = re.search(pattern, paragrafo,re.DOTALL)
-                                            paragrafo = match.group(1) 
-                                        except:
-                                            try:
-                                                pattern = r'Abstract:?\s*(.*?)\s*\n*\s*NOTATION'
-                                                match = re.search(pattern, paragrafo,re.DOTALL)
-                                                paragrafo = match.group(1) 
-                                            except:
-                                                try: 
-                                                    pattern = r'Abstract.\s*(.*?)[\s*\n]?[\d]\s*INTRODUCTION'
-                                                    match = re.search(pattern, paragrafo,re.DOTALL)
-                                                    paragrafo = match.group(1) 
-                                                except:
-                                                    try: 
-                                                        pattern = r'Abstract:?\s*(.*?)\s*\n*\s*Nomenclature'
-                                                        match = re.search(pattern, paragrafo,re.DOTALL)
-                                                        paragrafo = match.group(1) 
-                                                    except: 
-                                                        try: 
-                                                            pattern = r'Abstract:?\s*(.*?)\s*\n*\s*1 BACKGROUND AND MOTIVATION'
-                                                            match = re.search(pattern, paragrafo,re.DOTALL)
-                                                            paragrafo = match.group(1) 
-                                                        except:
-                                                            try:
-                                                                pattern = r'Abstract:?\s*(.*?)\s*\n*\s*1 LOADING OF CONTROL SURFACE ACTUATORS'
-                                                                match = re.search(pattern, paragrafo,re.DOTALL)
-                                                                paragrafo = match.group(1) 
-                                                            except:
-                                                                pattern = r'Abstract:?\s*(.*?)\s*\n*\s*1 INFLUENCE OF FLIGHT'
-                                                                match = re.search(pattern, paragrafo,re.DOTALL)
-                                                                paragrafo = match.group(1) 
-                                                                
-                    
-                    
-
-                                                        
-
-                    if paragrafo[-1].isdigit():
-                        paragrafo = paragrafo[:-1]
-                ws['G'+str(row)].value = paragrafo     
-            
-            #if not flag_keywords and IFASD_name!='IFASD-2017-180.pdf' and IFASD_name!='IFASD-2017-181.pdf':
-                if not is_already_open:
-                    IFASD_name = ws['F'+str(row)].value
-                    texts = extract_text('/Users/francesconuzzo/Downloads/USB_Proceedings/info/papers/'+IFASD_name,page_numbers=[0,1])
-                    is_already_open = True
-                paragrafo = texts
-                pattern =  r'Keywords:\s*(.*?)\s*[\n\s]*Abstract\s*:'
-                paragrafo = clean_text(paragrafo,IFASD_name)
-                try:
-                    match = re.search(pattern, paragrafo,re.DOTALL)   
-                    paragrafo = match.group(1)
-                except:
-                    try:
-                        pattern =  r'Kewywords:\s*(.*?)[\s*\n]?\s*INTRODUCTION'
-                        match = re.search(pattern, paragrafo,re.DOTALL)   
-                        paragrafo = match.group(1)
-                    except:
-                        try:
-                            pattern =  r'Kewywords:\s*(.*?)[\s*\n]?\s*Introduction'
-                            match = re.search(pattern, paragrafo,re.DOTALL)   
-                            paragrafo = match.group(1)
-                        except:
-                            try:
-                                pattern =  r'Keywords:\s*(.*?)\s*[\n\s]*Abstract '
-                                match = re.search(pattern, paragrafo,re.DOTALL)   
-                                paragrafo = match.group(1)
-                            except:
-                                try:
-                                    pattern =  r'Keywords:\s*(.*?)\s*1\s+INTRODUCTION'
-                                    match = re.search(pattern, paragrafo,re.DOTALL)   
-                                    paragrafo = match.group(1)
-                                except:
-                                    try:
-                                        pattern =  r'Keywords.\s*(.*?)[\s*\n]?\s*Abstract'
-                                        match = re.search(pattern, paragrafo,re.DOTALL)   
-                                        paragrafo = match.group(1)
-                                    except:
-                                        try:
-                                            pattern =  r'Keywords\s*(.*?)[\s*\n]?\s*Abstract'
-                                            match = re.search(pattern, paragrafo,re.DOTALL)   
-                                            paragrafo = match.group(1)
-                                        except:
-                                            try: 
-                                                pattern =  r'Key words:\s*(.*?)[\s*\n]?\s*Abstract'
-                                                match = re.search(pattern, paragrafo,re.DOTALL)   
-                                                paragrafo = match.group(1)
-                                            except:
-                                                pattern =  r'Kewords:\s*(.*?)[\s*\n]?\s*Abstract'
-                                                match = re.search(pattern, paragrafo,re.DOTALL)   
-                                                paragrafo = match.group(1)
-                    
-                    if paragrafo[-1].isdigit():
-                        paragrafo = paragrafo[:-1]
-                ws['I'+str(row)].value = paragrafo
-            if not flag_online or flag_online:
+        # Estrazione degli autori con pattern multipli
+        if not flag_authors:
+            # Pattern per trovare gli autori dopo il titolo
+            authors_patterns = [
+                rf'{re.escape(paper_title_raw)}\n*(.+?)(?=\n{{2,}})',
+                paper_title_raw + r'\n*([^\n]+)',
+                paper_title_raw + r'\n*(.+?)(?=\n{2,})',
+                re.escape(paper_title_raw) + r'\n*([^\n]+)',
+                re.escape(paper_title_raw) + r'\n*(.+?)(?=\n{2,})',
                 
-                title = ws['B'+str(row)].value
-                if '\n' in title:          
-                    title = re.sub(r'\n+',' ',title)
-                    
-                if '  ' in title:
-                    pat = r'\s+'
-                    title = re.sub(pat,' ',title)
-                print('\n'+title)
-                print('\n')
-                print(IFASD_name + '\n')
+                r'{re.escape(paper_title_raw)}*\n*(.+?)(?=\n{{2,}})',  # Cerca gli autori dopo il titolo
+                r'\s*Authors\s*[:\-]?\s*(.*?)\s*(?=\n{2,})',      # Autori dopo "Authors:"
+                r'\s*(.*?)\s*1\s+Introduction',                    # Autori prima di "Introduction"
+            ]
+            
+            for pattern in authors_patterns:
+                match = re.findall(pattern, text, re.DOTALL)
+                if match:
+                    # Rimuovi numeri, trattini e caratteri non necessari
+                    paper_authors = re.sub(r'\d+', '', match[0])  # Rimuove numeri
+                    paper_authors = re.sub(r'\n+', ' ', paper_authors)  # Rimuove eventuali ritorni a capo extra
+                    paper_authors = paper_authors.strip()  # Rimuove spazi extra iniziali e finali
+                    print(paper_authors + '\n\n')
+                    # Salva gli autori nel foglio Excel
+                    ws[f'C{row}'].value = clean_text(paper_authors, IFASD_name)
+                    break
 
-                titles = titles + title +'\n'
-                #ws['J'+str(row)].value = link
-        else:
-            row = row + 1
+        # Inserisce il nome file
+        if not flag_file_name:
+            ws[f'F{row}'].value = IFASD_name
+
+        # Estrazione dell'abstract con tutti i pattern richiesti
+        if not flag_abstract:
+            abstract_patterns = [
+                r'Abstract:\s*(.*?)[\s*\n]?\d\s*INTRODUCTION',
+                r'Abstract:\s*(.*?)[\s*\n]?\s*List of Symbols',
+                r'Abstract:\s*(.*?)[\s*\n]?\s*Introduction',
+                r'Abstract:\s*(.*?)[\s*\n]?\s*Notice to Readers',
+                r'Abstract:?\s*(.*?)\s*\n*\s*INTRODUCTION',
+                r'Abstract.\s*(.*?)[\s*\n]?[\d]\s*INTRODUCTION'
+            ]
+            for pattern in abstract_patterns:
+                match = re.search(pattern, paragrafo, re.DOTALL)
+                if match:
+                    ws[f'G{row}'].value = match.group(1).strip()
+                    break
+
+        # Estrazione delle parole chiave con tutti i pattern specificati
+        if not flag_keywords:
+            keywords_patterns = [
+                r'Keywords:\s*(.*?)\s*[\n\s]*Abstract\s*:',
+                r'Keywords:\s*(.*?)[\s*\n]?\s*INTRODUCTION',
+                r'Keywords:\s*(.*?)\s*1\s+INTRODUCTION',
+                r'Key words:\s*(.*?)[\s*\n]?\s*Abstract'
+            ]
+            for pattern in keywords_patterns:
+                match = re.search(pattern, paragrafo, re.DOTALL)
+                if match:
+                    ws[f'I{row}'].value = clean_text(match.group(1), IFASD_name)
+                    break
+
+        # Salva il titolo per il file di output
+        title = ws[f'B{row}'].value
+        if title:
+            title = re.sub(r'\s+', ' ', title).strip()  # Rimuove spazi e righe extra
+            titles += title + '\n'
+
+# Scrittura dei titoli in un file di testo
 with open('titles.txt', "w") as file_titles:
-    file_titles.write(titles)             
-wb.save('/Users/francesconuzzo/Downloads/USB_Proceedings/info/papers/Cartel1.xlsx')
+    file_titles.write(titles)
+
+# Salvataggio del workbook Excel
+wb.save(excel_path)
